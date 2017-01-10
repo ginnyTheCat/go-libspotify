@@ -113,7 +113,9 @@ var (
 	once sync.Once
 
 	// callbacks is a static set of callbacks used for all sessions.
-	callbacks C.sp_session_callbacks
+	callbacks *C.sp_session_callbacks
+
+	session *Session
 )
 
 // event is an internal type passed around to wake the main session thread up.
@@ -180,8 +182,6 @@ type Session struct {
 // sessionCall maps the C Spotify session structure to the Go session and
 // executes the given function.
 func sessionCall(spSession unsafe.Pointer, callback func(*Session)) {
-	s := (*C.sp_session)(spSession)
-	session := (*Session)(C.sp_session_userdata(s))
 	callback(session)
 }
 
@@ -292,9 +292,11 @@ func (s *Session) setupConfig(config *Config) error {
 	// Setup the callbacks structure used for all sessions. The difference
 	// between each session object is the userdata object which points into the
 	// Go Session object.
-	once.Do(func() { C.set_callbacks(&callbacks) })
-	s.config.callbacks = &callbacks
-	s.config.userdata = unsafe.Pointer(s)
+	once.Do(func() {
+		callbacks = C.create_callbacks()
+		session = s
+	})
+	s.config.callbacks = callbacks
 
 	if config.CompressPlaylists {
 		s.config.compress_playlists = 1
@@ -340,6 +342,7 @@ func (s *Session) Close() error {
 
 		err = spError(C.sp_session_release(s.sp_session))
 		s.free()
+		C.free(unsafe.Pointer(callbacks))
 	})
 	return nil
 }
@@ -1136,8 +1139,6 @@ func go_notify_main_thread(spSession unsafe.Pointer) {
 
 //export go_music_delivery
 func go_music_delivery(spSession unsafe.Pointer, format *C.sp_audioformat, data unsafe.Pointer, num_frames C.int) C.int {
-	s := (*C.sp_session)(spSession)
-	session := (*Session)(C.sp_session_userdata(s))
 	audioFormat := AudioFormat{
 		SampleType(format.sample_type),
 		int(format.sample_rate),

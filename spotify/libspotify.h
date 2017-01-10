@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <libspotify/api.h>
 
-void set_callbacks(sp_session_callbacks*);
+sp_session_callbacks* create_callbacks();
 
 void SP_CALLCONV cb_logged_in(sp_session *session, sp_error error);
 void SP_CALLCONV cb_logged_out(sp_session *session);

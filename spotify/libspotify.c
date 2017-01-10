@@ -15,8 +15,10 @@
 #include "_cgo_export.h"
 #include "libspotify.h"
 
-void set_callbacks(sp_session_callbacks *callbacks)
+sp_session_callbacks* create_callbacks()
 {
+	struct sp_session_callbacks *callbacks = malloc(sizeof *callbacks);
+
 	callbacks->logged_in = cb_logged_in;
 	callbacks->logged_out = cb_logged_out;
 	callbacks->metadata_updated = cb_metadata_updated;
@@ -38,6 +40,8 @@ void set_callbacks(sp_session_callbacks *callbacks)
 	callbacks->connectionstate_updated = cb_connectionstate_updated;
 	callbacks->scrobble_error = cb_scrobble_error;
 	callbacks->private_session_mode_changed = cb_private_session_mode_changed;
+
+	return callbacks;
 }
 
 void SP_CALLCONV cb_logged_in(sp_session *session, sp_error error)
