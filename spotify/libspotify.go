@@ -341,6 +341,9 @@ func (s *Session) Close() error {
 		s.wg.Wait()
 
 		err = spError(C.sp_session_release(s.sp_session))
+		if err != nil {
+			s.log(LogDebug, "failed to release session")
+		}
 		s.free()
 		C.free(unsafe.Pointer(callbacks))
 	})
