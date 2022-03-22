@@ -81,7 +81,9 @@ type Config struct {
 	InitiallyUnloadPlaylists bool
 
 	// TODO device_id
-	// TODO proxy
+
+	Proxy *url.URL
+
 	// TODO ca_certs
 	// TODO tracefile
 
@@ -287,6 +289,18 @@ func (s *Session) setupConfig(config *Config) error {
 	s.config.user_agent = C.CString(userAgent)
 	if s.config.user_agent == nil {
 		return syscall.ENOMEM
+	}
+
+	if config.Proxy != nil {
+		u := *config.Proxy
+
+		s.config.proxy_username = C.CString(u.User.Username())
+		if passwd, has := u.User.Password(); has {
+			s.config.proxy_username = C.CString(passwd)
+		}
+
+		u.User = nil
+		s.config.proxy = C.CString(u.String())
 	}
 
 	// Setup the callbacks structure used for all sessions. The difference
